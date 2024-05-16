@@ -70,4 +70,4 @@ class Recommender:
                 break
             return recommendations[:max_recommendations]
     
-        return [42]  # always recommends the same item (requires that there are at least 43 items)
+     
