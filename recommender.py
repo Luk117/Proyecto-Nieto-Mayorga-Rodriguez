@@ -19,34 +19,24 @@ class Recommender:
         item_sets = [(frozenset([item]), set([idx for idx, transaction in enumerate(transactions) if item in transaction])) for item in set(item for sublist in transactions for item in sublist)]
         return eclat_rec(item_sets, minsup, F)
 
-    def createAssociationRules(self, F, minconf):
+    def createAssociationRules(self, F, minconf, max_set_size=3):
         def powerset(s):
             result = [[]]
             for elem in s:
                 result += [x + [elem] for x in result]
-            return result[1:]
-
-        def diff(first, second):
-            second = set(second)
-            return [item for item in first if item not in second]
+            return result[1:-1]  # exclude empty set and full set
 
         B = []
-
-        for Z, supZ in [fEntry for fEntry in F if len(fEntry[0]) > 1]:
-            A = sorted(powerset(Z), key=lambda l: len(l), reverse=True)
-            A = [x for x in A if x and x != Z]
+        for Z, supZ in [fEntry for fEntry in F if 1 < len(fEntry[0]) <= max_set_size]:
+            A = sorted(powerset(list(Z)), key=lambda l: len(l), reverse=True)
             while A:
                 X = A.pop(0)
-                O = [xEntry for xEntry in F if xEntry[0] == X][0][1]
+                O = [xEntry for xEntry in F if xEntry[0] == frozenset(X)][0][1]
                 c = supZ / O
                 if c >= minconf:
-                    B.append((X, diff(Z, X), supZ, c))
-                else:
-                    m = powerset(X)
-                    for z in m:
-                        if z in A:
-                            A.remove(z)
+                    B.append((X, list(Z - set(X)), supZ, c))
         return B
+
     """
         This is the class to make recommendations.
         The class must not require any mandatory arguments for initialization.
