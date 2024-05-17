@@ -13,21 +13,16 @@ class Recommender:
                     item_tidsets[item] = {tid}
 
         item_tidsets = {item: tids for item, tids in item_tidsets.items() if len(tids) >= minsup}
-
-        def eclat_recursive(prefix, items_tidsets, frequent_itemsets):
-            sorted_items = sorted(items_tidsets.items())
-            for i, (item, tidset_i) in enumerate(sorted_items):
-                new_itemset = prefix + (item,)
-                frequent_itemsets.append((new_itemset, len(tidset_i)))
-                suffix_tidsets = {}
-                for item_j, tidset_j in sorted_items[i + 1:]:
-                    new_tidset = tidset_i & tidset_j
-                    if len(new_tidset) >= minsup:
-                        suffix_tidsets[item_j] = new_tidset
-                eclat_recursive(new_itemset, suffix_tidsets, frequent_itemsets)
-
         frequent_itemsets = []
-        eclat_recursive(tuple(), item_tidsets, frequent_itemsets)
+
+        def eclat_recursive(prefix, items_tidsets):
+            for item, tidset in items_tidsets.items():
+                new_prefix = prefix + (item,)
+                frequent_itemsets.append((new_prefix, len(tidset)))
+                suffix_tidsets = {other: tids & tidset for other, tids in items_tidsets.items() if other > item and len(tids & tidset) >= minsup}
+                eclat_recursive(new_prefix, suffix_tidsets)
+
+        eclat_recursive(tuple(), item_tidsets)
         return frequent_itemsets
 
     def createAssociationRules(self, F, minconf):
