@@ -35,9 +35,9 @@ class Recommender:
         for itemset, support in F:
             if len(itemset) > 1:
                 for item in itemset:
-                    antecedent = frozenset([item])
-                    consequent = frozenset(itemset) - antecedent
-                    antecedent_support = next((sup for iset, sup in F if frozenset(iset) == antecedent), 0)
+                    antecedent = tuple([item])
+                    consequent = tuple(itemset) - antecedent
+                    antecedent_support = next((sup for iset, sup in F if tuple(iset) == antecedent), 0)
                     if antecedent_support > 0:
                         conf = support / antecedent_support
                         if conf >= minconf:
