@@ -34,9 +34,9 @@ class Recommender:
         itemset_support = {frozenset(itemset): support for itemset, support in F}
         for itemset, support in F:
             if len(itemset) > 1:
-                for item in itemset:
-                    antecedent = frozenset([item])
-                    consequent = frozenset(itemset) - antecedent
+                for i in range(len(itemset)):
+                    antecedent = frozenset(itemset[:i] + itemset[i+1:])
+                    consequent = frozenset([itemset[i]])
                     antecedent_support = itemset_support.get(antecedent, 0)
                     if antecedent_support > 0:
                         conf = support / antecedent_support
@@ -44,18 +44,18 @@ class Recommender:
                             B.append((antecedent, consequent, support, conf))
         return B
 
-    def train(self, database, minsup=0.05, minconf=0.7):
-        minsup_count = int(minsup * len(database))
+    def train(self, prices, database):
+        minsup_count = int(prices * len(database))
         self.frequent_itemsets = self.eclat(database, minsup_count)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf)
         return self
 
     def get_recommendations(self, cart, max_recommendations=5):
-        recommendations = defaultdict(int)
+        recommendations = defaultdict(float)
         for rule in self.RULES:
             if rule[0].issubset(cart):
                 for item in rule[1]:
                     if item not in cart:
-                        recommendations[item] += rule[2]
+                        recommendations[item] += rule[3]  # Use confidence instead of support for recommendations
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
