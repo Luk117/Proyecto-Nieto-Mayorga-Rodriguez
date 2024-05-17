@@ -1,28 +1,30 @@
+import numpy as np
+from collections import defaultdict
+
 class Recommender:
     def __init__(self):
         self.RULES = []
         self.frequent_itemsets = None
 
-    def eclat(self, transactions, minsup):
-        item_tidsets = {}
+    def eclat(self, transactions, minsup_count):
+        item_tidsets = defaultdict(set)
         for tid, transaction in enumerate(transactions):
             for item in transaction:
-                if item in item_tidsets:
-                    item_tidsets[item].add(tid)
-                else:
-                    item_tidsets[item] = {tid}
+                item_tidsets[item].add(tid)
 
-        min_count = minsup * len(transactions)
-        item_tidsets = {item: tids for item, tids in item_tidsets.items() if len(tids) >= min_count}
+        item_tidsets = {item: tids for item, tids in item_tidsets.items() if len(tids) >= minsup_count}
 
-        def eclat_recursive(prefix, items_tidsets, frequent_itemsets, depth=0, max_depth=3):
-            if depth > max_depth:
-                return
-            for item, tidset in items_tidsets.items():
-                new_prefix = prefix + (item,)
-                frequent_itemsets.append((new_prefix, len(tidset)))
-                suffix_tidsets = {other: tids & tidset for other, tids in items_tidsets.items() if other > item}
-                eclat_recursive(new_prefix, suffix_tidsets, frequent_itemsets, depth+1)
+        def eclat_recursive(prefix, items_tidsets, frequent_itemsets):
+            sorted_items = sorted(items_tidsets.items(), key=lambda x: len(x[1]), reverse=True)
+            for i, (item, tidset_i) in enumerate(sorted_items):
+                new_itemset = prefix + (item,)
+                frequent_itemsets.append((new_itemset, len(tidset_i)))
+                suffix_tidsets = {}
+                for item_j, tidset_j in sorted_items[i + 1:]:
+                    new_tidset = tidset_i & tidset_j
+                    if len(new_tidset) >= minsup_count:
+                        suffix_tidsets[item_j] = new_tidset
+                eclat_recursive(new_itemset, suffix_tidsets, frequent_itemsets)
 
         frequent_itemsets = []
         eclat_recursive(tuple(), item_tidsets, frequent_itemsets)
