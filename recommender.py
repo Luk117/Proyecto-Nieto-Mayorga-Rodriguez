@@ -83,7 +83,7 @@ class Recommender:
         """
         self.prices = prices
         minsup = 0.05  # Using a default minimum support of 5%
-        minconf = 0.7  # Using a default minimum confidence of 70%
+        minconf = 0.3  # Using a default minimum confidence of 70%
         minsup_count = int(minsup * len(database))
         
         self.frequent_itemsets = self.eclat(database, minsup_count)
@@ -109,10 +109,3 @@ class Recommender:
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
-
-# Example usage:
-# recommender = Recommender()
-# prices = [1.0, 2.0, 3.0, 4.0, 5.0]  # Example prices
-# transactions = [[0, 1], [0, 2, 3], [1, 2, 3, 4], [0, 1, 3], [1, 3, 4]]  # Example transactions
-# recommender.train(prices, transactions)
-# print(recommender.get_recommendations([0, 1], max_recommendations=5))
