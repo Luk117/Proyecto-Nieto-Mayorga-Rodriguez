@@ -7,18 +7,13 @@ class Recommender:
         item_tidsets = {}
         for tid, transaction in enumerate(transactions):
             for item in transaction:
-                item_tidsets[item] = item_tidsets.get(item, 0) + 1
-
-        frequent_items = {item for item, count in item_tidsets.items() if count >= minsup * len(transactions)}
-        transactions = [{item for item in t if item in frequent_items} for t in transactions]
-
-        item_tidsets = {}
-        for tid, transaction in enumerate(transactions):
-            for item in transaction:
                 if item in item_tidsets:
                     item_tidsets[item].add(tid)
                 else:
                     item_tidsets[item] = {tid}
+
+        min_count = minsup * len(transactions)
+        item_tidsets = {item: tids for item, tids in item_tidsets.items() if len(tids) >= min_count}
 
         def eclat_recursive(prefix, items_tidsets, frequent_itemsets, depth=0, max_depth=3):
             if depth > max_depth:
@@ -27,7 +22,7 @@ class Recommender:
                 new_prefix = prefix + (item,)
                 frequent_itemsets.append((new_prefix, len(tidset)))
                 suffix_tidsets = {other: tids & tidset for other, tids in items_tidsets.items() if other > item}
-                eclat_recursive(new_prefix, suffix_tidsets, frequent_itemsets, depth+1, max_depth)
+                eclat_recursive(new_prefix, suffix_tidsets, frequent_itemsets, depth+1)
 
         frequent_itemsets = []
         eclat_recursive(tuple(), item_tidsets, frequent_itemsets)
