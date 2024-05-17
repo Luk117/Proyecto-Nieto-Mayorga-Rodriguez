@@ -40,8 +40,8 @@ class Recommender:
         return B
 
     def train(self,prices,database) -> None :
-        self.frequent_itemsets = self.eclat(database,minsup=0.7)
-        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.5)
+        self.frequent_itemsets = self.eclat(database,minsup=0.05)
+        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.7)
         return self
 
     def get_recommendations(self, cart, max_recommendations=5):
