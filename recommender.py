@@ -1,21 +1,20 @@
+from collections import defaultdict
+
 class Recommender:
     def __init__(self):
         self.RULES = []
         self.frequent_itemsets = None
 
     def eclat(self, transactions, minsup):
-        item_tidsets = {}
+        item_tidsets = defaultdict(set)
         for tid, transaction in enumerate(transactions):
             for item in transaction:
-                if item in item_tidsets:
-                    item_tidsets[item].add(tid)
-                else:
-                    item_tidsets[item] = {tid}
+                item_tidsets[item].add(tid)
 
         item_tidsets = {item: tids for item, tids in item_tidsets.items() if len(tids) >= minsup}
 
         def eclat_recursive(prefix, items_tidsets, frequent_itemsets):
-            sorted_items = sorted(items_tidsets.items())
+            sorted_items = sorted(items_tidsets.items(), key=lambda x: len(x[1]), reverse=True)
             for i, (item, tidset_i) in enumerate(sorted_items):
                 new_itemset = prefix + (item,)
                 frequent_itemsets.append((new_itemset, len(tidset_i)))
@@ -32,12 +31,13 @@ class Recommender:
 
     def createAssociationRules(self, F, minconf):
         B = []
+        itemset_support = {frozenset(itemset): support for itemset, support in F}
         for itemset, support in F:
             if len(itemset) > 1:
                 for item in itemset:
                     antecedent = frozenset([item])
                     consequent = frozenset(itemset) - antecedent
-                    antecedent_support = next((sup for iset, sup in F if frozenset(iset) == antecedent), 0)
+                    antecedent_support = itemset_support.get(antecedent, 0)
                     if antecedent_support > 0:
                         conf = support / antecedent_support
                         if conf >= minconf:
@@ -45,18 +45,17 @@ class Recommender:
         return B
 
     def train(self, database, minsup=0.05, minconf=0.7):
-        self.frequent_itemsets = self.eclat(database, minsup)
+        minsup_count = int(minsup * len(database))
+        self.frequent_itemsets = self.eclat(database, minsup_count)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf)
         return self
 
     def get_recommendations(self, cart, max_recommendations=5):
-        recommendations = {}
+        recommendations = defaultdict(int)
         for rule in self.RULES:
             if rule[0].issubset(cart):
                 for item in rule[1]:
                     if item not in cart:
-                        recommendations[item] = recommendations.get(item, 0) + rule[2]
+                        recommendations[item] += rule[2]
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
-
-
