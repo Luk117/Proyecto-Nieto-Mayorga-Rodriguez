@@ -61,8 +61,8 @@ class Recommender:
         for itemset, support in F:
             if len(itemset) > 1:
                 for i in range(len(itemset)):
-                    antecedent = frozenset(itemset[:i] + itemset[i+1:])
-                    consequent = frozenset([itemset[i]])
+                    antecedent = frozenset([itemset[i]])
+                    consequent = frozenset(itemset[:i] + itemset[i+1:])
                     antecedent_support = itemset_support.get(antecedent, 0)
                     if antecedent_support > 0:
                         conf = support / antecedent_support
@@ -72,6 +72,7 @@ class Recommender:
                             leverage_value = sup_XY - (sup_X * sup_Y)
                             jaccard_value = sup_XY / (sup_X + sup_Y - sup_XY) if (sup_X + sup_Y - sup_XY) != 0 else 0
                             B.append((antecedent, consequent, support, conf, lift_value, leverage_value, jaccard_value))
+                            print(f"Rule created: {antecedent} -> {consequent} | conf: {conf}, lift: {lift_value}, leverage: {leverage_value}, jaccard: {jaccard_value}")
         return B
 
     def train(self, prices, database) -> None:
@@ -83,11 +84,16 @@ class Recommender:
         """
         self.prices = prices
         minsup = 0.05  # Using a default minimum support of 5%
-        minconf = 0.3  # Using a default minimum confidence of 70%
+        minconf = 0.7  # Using a default minimum confidence of 70%
         minsup_count = int(minsup * len(database))
         
+        print("Calculating frequent itemsets...")
         self.frequent_itemsets = self.eclat(database, minsup_count)
+        print("Frequent itemsets:", self.frequent_itemsets)
+        
+        print("Creating association rules...")
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf, database)
+        print("Association rules:", self.RULES)
         
         return self
 
@@ -107,5 +113,7 @@ class Recommender:
                         score = (rule[3] + rule[4] + rule[5] + rule[6]) * self.prices[item]
                         recommendations[item] += score
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
+        
+        print("Recommendations:", sorted_recommendations)
         
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
