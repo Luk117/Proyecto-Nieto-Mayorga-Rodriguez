@@ -60,10 +60,17 @@ class Recommender:
         """
         self.prices = prices
         minsup = 0.05  # Using a default minimum support of 5%
-        minconf = 0.2  # Using a default minimum confidence of 70%
+        minconf = 0.3  # Using a default minimum confidence of 70%
         minsup_count = int(minsup * len(database))
+        
+        print("Calculating frequent itemsets...")
         self.frequent_itemsets = self.eclat(database, minsup_count)
+        print("Frequent itemsets:", self.frequent_itemsets)
+        
+        print("Creating association rules...")
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf)
+        print("Association rules:", self.RULES)
+        
         return self
 
     def get_recommendations(self, cart: list, max_recommendations: int) -> list:
@@ -80,4 +87,8 @@ class Recommender:
                     if item not in cart:
                         recommendations[item] += rule[3] * self.prices[item]  # Use confidence and price to prioritize recommendations
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
+        
+        # Debug print to verify recommendations
+        print("Recommendations:", sorted_recommendations)
+        
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
