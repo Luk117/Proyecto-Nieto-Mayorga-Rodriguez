@@ -44,7 +44,7 @@ class Recommender:
                             B.append((antecedent, consequent, support, conf))
         return B
 
-    def train(self, database, minsup=0.05, minconf=0.7):
+    def train(self,prices,database) -> None :
         self.frequent_itemsets = self.eclat(database, minsup)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf)
         return self
