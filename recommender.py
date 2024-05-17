@@ -27,7 +27,7 @@ class Recommender:
                 eclat_recursive(new_itemset, suffix_tidsets, frequent_itemsets)
 
         frequent_itemsets = []
-        eclat_recursive(set(), item_tidsets, frequent_itemsets)
+        eclat_recursive(tuple(), item_tidsets, frequent_itemsets)
         return frequent_itemsets
 
     def createAssociationRules(self, F, minconf):
