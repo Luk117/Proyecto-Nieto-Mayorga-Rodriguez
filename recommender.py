@@ -1,6 +1,7 @@
 class Recommender:
     def __init__(self):
         self.RULES = [] 
+        self.frequent_itemsets = None
 
     def eclat(self, transactions, minsup):
         def eclat_rec(P, minsup, F):
@@ -43,8 +44,8 @@ class Recommender:
     """
     def train(self, prices, database, minsup=0.5, minconf=0.7) -> None:
 
-        frequent_itemsets = self.eclat(database, minsup)
-        self.RULES = self.createAssociationRules(frequent_itemsets, minconf)
+        self.frequent_itemsets = self.eclat(database, minsup)
+        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf)
 
         """
             allows the recommender to learn which items exist, which prices they have, and which items have been purchased together in the past
