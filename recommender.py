@@ -1,5 +1,52 @@
 import numpy as np
 from collections import defaultdict
+import itertools
+
+def calculate_supports(D, X, Y=None):
+    count_X = 0
+    count_XY = 0
+    count_Y = 0 if Y else None
+    
+    for transaction in D:
+        if set(X).issubset(transaction):
+            count_X += 1
+            if Y and set(Y).issubset(transaction):
+                count_XY += 1
+        elif Y and set(Y).issubset(transaction):
+            count_Y += 1
+    
+    sup_X = count_X / len(D)
+    sup_XY = count_XY / len(D)
+    sup_Y = count_Y / len(D) if count_Y is not None else None
+    
+    return sup_X, sup_XY, sup_Y
+
+def conf(D, X, Y, count_X, count_XY):
+    return count_XY / count_X if count_X != 0 else 0
+
+def lift(sup_X, sup_Y, sup_XY):
+    return sup_XY / (sup_X * sup_Y) if (sup_X * sup_Y) != 0 else 0
+
+def leverage(sup_X, sup_Y, sup_XY):
+    return sup_XY - (sup_X * sup_Y)
+
+def jaccard(D, X, Y, count_X, count_XY, count_Y):
+    return count_XY / (count_X + count_Y - count_XY) if (count_X + count_Y - count_XY) != 0 else 0
+
+def getRuleMetric(D, X, Y, metric):
+    sup_X, sup_XY, sup_Y = calculate_supports(D, X, Y)
+    count_X = sup_X * len(D)
+    count_XY = sup_XY * len(D)
+    count_Y = sup_Y * len(D) if sup_Y is not None else None
+    
+    metrics = {
+        'sup': sup_XY,
+        'conf': conf(D, X, Y, count_X, count_XY),
+        'lift': lift(sup_X, sup_Y, sup_XY),
+        'leverage': leverage(sup_X, sup_Y, sup_XY),
+        'jaccard': jaccard(D, X, Y, count_X, count_XY, count_Y),
+    }
+    return metrics[metric]
 
 class Recommender:
     """
@@ -36,19 +83,22 @@ class Recommender:
         eclat_recursive(tuple(), item_tidsets, frequent_itemsets)
         return frequent_itemsets
 
-    def createAssociationRules(self, F, minconf):
+    def createAssociationRules(self, F, minconf, database):
         B = []
         itemset_support = {frozenset(itemset): support for itemset, support in F}
         for itemset, support in F:
             if len(itemset) > 1:
                 for i in range(len(itemset)):
-                    antecedent = frozenset(itemset[:i] + itemset[i+1:])
-                    consequent = frozenset([itemset[i]])
+                    antecedent = frozenset([itemset[i]])
+                    consequent = frozenset(itemset[:i] + itemset[i+1:])
                     antecedent_support = itemset_support.get(antecedent, 0)
                     if antecedent_support > 0:
-                        conf = support / antecedent_support
-                        if conf >= minconf:
-                            B.append((antecedent, consequent, support, conf))
+                        conf_value = conf(database, list(antecedent), list(consequent), antecedent_support, support)
+                        if conf_value >= minconf:
+                            lift_value = getRuleMetric(database, list(antecedent), list(consequent), 'lift')
+                            leverage_value = getRuleMetric(database, list(antecedent), list(consequent), 'leverage')
+                            jaccard_value = getRuleMetric(database, list(antecedent), list(consequent), 'jaccard')
+                            B.append((antecedent, consequent, support, conf_value, lift_value, leverage_value, jaccard_value))
         return B
 
     def train(self, prices, database) -> None:
@@ -60,7 +110,7 @@ class Recommender:
         """
         self.prices = prices
         minsup = 0.05  # Using a default minimum support of 5%
-        minconf = 0.3  # Using a default minimum confidence of 70%
+        minconf = 0.7  # Using a default minimum confidence of 70%
         minsup_count = int(minsup * len(database))
         
         print("Calculating frequent itemsets...")
@@ -68,7 +118,7 @@ class Recommender:
         print("Frequent itemsets:", self.frequent_itemsets)
         
         print("Creating association rules...")
-        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf)
+        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf, database)
         print("Association rules:", self.RULES)
         
         return self
@@ -85,7 +135,9 @@ class Recommender:
             if rule[0].issubset(cart):
                 for item in rule[1]:
                     if item not in cart:
-                        recommendations[item] += rule[3] * self.prices[item]  # Use confidence and price to prioritize recommendations
+                        # Use a combination of confidence, lift, leverage, and jaccard to prioritize recommendations
+                        score = (rule[3] + rule[4] + rule[5] + rule[6]) * self.prices[item]
+                        recommendations[item] += score
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         
         # Debug print to verify recommendations
