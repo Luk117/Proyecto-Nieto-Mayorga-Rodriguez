@@ -60,7 +60,7 @@ class Recommender:
         """
         self.prices = prices
         minsup = 0.05  # Using a default minimum support of 5%
-        minconf = 0.7  # Using a default minimum confidence of 70%
+        minconf = 0.2  # Using a default minimum confidence of 70%
         minsup_count = int(minsup * len(database))
         self.frequent_itemsets = self.eclat(database, minsup_count)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf)
