@@ -12,7 +12,7 @@ def calculate_supports(D, X, Y=None):
             count_X += 1
             if Y and set(Y).issubset(transaction):
                 count_XY += 1
-        elif Y and set(Y).issubset(transaction):
+        if Y and set(Y).issubset(transaction):
             count_Y += 1
     
     sup_X = count_X / len(D)
@@ -93,7 +93,7 @@ class Recommender:
                     consequent = frozenset(itemset[:i] + itemset[i+1:])
                     antecedent_support = itemset_support.get(antecedent, 0)
                     if antecedent_support > 0:
-                        conf_value = conf(database, list(antecedent), list(consequent), antecedent_support, support)
+                        conf_value = support / antecedent_support
                         if conf_value >= minconf:
                             lift_value = getRuleMetric(database, list(antecedent), list(consequent), 'lift')
                             leverage_value = getRuleMetric(database, list(antecedent), list(consequent), 'leverage')
@@ -110,7 +110,7 @@ class Recommender:
         """
         self.prices = prices
         minsup = 0.05  # Using a default minimum support of 5%
-        minconf = 0.7  # Using a default minimum confidence of 70%
+        minconf = 0.2  # Using a default minimum confidence of 70%
         minsup_count = int(minsup * len(database))
         
         print("Calculating frequent itemsets...")
