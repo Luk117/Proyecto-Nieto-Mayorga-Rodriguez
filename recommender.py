@@ -53,7 +53,7 @@ class Recommender:
 
     def train(self, prices, database):
         self.database = database
-        minsup_count = int(0.03 * len(database)) 
+        minsup_count = int(0.03 * len(database))
         self.eclat(database, minsup_count)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.5, transactions=self.database)
         return self
@@ -87,3 +87,4 @@ class Recommender:
                         recommendations[item] = recommendations.get(item, 0) + rule[2]['support']
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
+
