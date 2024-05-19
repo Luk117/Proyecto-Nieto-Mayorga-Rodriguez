@@ -33,39 +33,24 @@ class Recommender:
         self.frequent_itemsets = frequent_itemsets
         return frequent_itemsets
 
-    def createAssociationRules(self, F, minconf):
+    def createAssociationRules(self, F, minconf, transactions):
         B = []
+        itemset_support = {frozenset(itemset): support for itemset, support in F}
         for itemset, support in F:
             if len(itemset) > 1:
-                for item in itemset:
-                    antecedent = set([item])
-                    consequent = set(itemset) - antecedent
-                    antecedent_support = next((sup for iset, sup in F if set(iset) == antecedent), 0)
+                for i in range(len(itemset)):
+                    antecedent = frozenset([itemset[i]])
+                    consequent = frozenset(itemset[:i] + itemset[i+1:])
+                    antecedent_support = itemset_support.get(antecedent, 0)
                     if antecedent_support > 0:
                         conf = support / antecedent_support
                         if conf >= minconf:
-                            sup_b = self.sup(consequent)
-                            sup_X = self.sup(antecedent, consequent)
-                            r_sup_a = antecedent_support / len(self.database)
-                            r_sup_b = sup_b
-                            r_sup_X = sup_X
-
-                            lift = conf / r_sup_b if r_sup_b > 0 else 0
-                            jaccard = r_sup_X / (r_sup_a + r_sup_b - r_sup_X)
-                            conviction = (1 - r_sup_b) / (1 - conf) if (1 - conf) != 0 else float('inf')
-                            leverage = r_sup_X - (r_sup_a * r_sup_b)
-                            leveraged_lift = leverage / lift if lift != 0 else 0
-
-                            metrics = {
-                                'support': support,
-                                'confidence': conf,
-                                'lift': lift,
-                                'leverage': leverage,
-                                'jaccard': jaccard,
-                                'conviction': conviction,
-                                'leveraged_lift': leveraged_lift
-                            }
-                            B.append((antecedent, consequent, metrics))
+                            sup_X, sup_XY, sup_Y = self.calculate_supports(transactions, list(antecedent), list(consequent))
+                            lift_value = sup_XY / (sup_X * sup_Y) if (sup_X * sup_Y) != 0 else 0
+                            leverage_value = sup_XY - (sup_X * sup_Y)
+                            jaccard_value = sup_XY / (sup_X + sup_Y - sup_XY) if (sup_X + sup_Y - sup_XY) != 0 else 0
+                            B.append((antecedent, consequent, support, conf, lift_value, leverage_value, jaccard_value))
+                            print(f"Rule created: {antecedent} -> {consequent} | conf: {conf}, lift: {lift_value}, leverage: {leverage_value}, jaccard: {jaccard_value}")
         return B
 
     def sup(self, X, Y=None):
