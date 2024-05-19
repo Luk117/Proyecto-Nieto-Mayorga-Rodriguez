@@ -6,6 +6,7 @@ class Recommender:
         self.RULES = []
         self.frequent_itemsets = None
         self.database = []
+        self.prices = {}
 
     def eclat(self, transactions, minsup_count):
         item_tidsets = defaultdict(set)
@@ -53,6 +54,7 @@ class Recommender:
 
     def train(self, prices, database):
         self.database = database
+        self.prices = prices
         minsup_count = int(0.03 * len(database))
         self.eclat(database, minsup_count)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.5, transactions=self.database)
@@ -74,8 +76,14 @@ class Recommender:
                             lift_value = sup_XY / (sup_X * sup_Y) if (sup_X * sup_Y) != 0 else 0
                             leverage_value = sup_XY - (sup_X * sup_Y)
                             jaccard_value = sup_XY / (sup_X + sup_Y - sup_XY) if (sup_X + sup_Y - sup_XY) != 0 else 0
-                            B.append((antecedent, consequent, support, conf, lift_value, leverage_value, jaccard_value))
-                            print(f"Rule created: {antecedent} -> {consequent} | conf: {conf}, lift: {lift_value}, leverage: {leverage_value}, jaccard: {jaccard_value}")
+                            metrics = {
+                                'support': support,
+                                'confidence': conf,
+                                'lift': lift_value,
+                                'leverage': leverage_value,
+                                'jaccard': jaccard_value
+                            }
+                            B.append((antecedent, consequent, metrics))
         return B
 
     def get_recommendations(self, cart, max_recommendations=5):
@@ -84,7 +92,18 @@ class Recommender:
             if rule[0].issubset(cart):
                 for item in rule[1]:
                     if item not in cart:
-                        recommendations[item] = recommendations.get(item, 0) + rule[2]['support']
+                        item_price = self.prices.get(item, 0)
+                    # Use rule[2]['support'] as now it is properly stored in a dictionary
+                        recommendations[item] = recommendations.get(item, 0) + rule[2]['support'] * item_price
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
+
+
+prices = {'item1': 10, 'item2': 20, 'item3': 5}
+database = [['item1', 'item2'], ['item1', 'item3']]
+recommender = Recommender()
+recommender.train(prices, database)
+cart = {'item1'}
+recommendations = recommender.get_recommendations(cart, 3)
+print(recommendations)
 
