@@ -86,24 +86,25 @@ class Recommender:
                             B.append((antecedent, consequent, metrics))
         return B
 
+    def normalize_prices(self):
+        max_price = max(self.prices.values())
+        min_price = min(self.prices.values())
+        range_price = max_price - min_price
+        normalized_prices = {item: (price - min_price) / range_price for item, price in self.prices.items()}
+        return normalized_prices
+
     def get_recommendations(self, cart, max_recommendations=5):
+        normalized_prices = self.normalize_prices()
         recommendations = {}
         for rule in self.RULES:
             if rule[0].issubset(cart):
                 for item in rule[1]:
                     if item not in cart:
-                        item_price = self.prices.get(item, 0)
-                    # Use rule[2]['support'] as now it is properly stored in a dictionary
-                        recommendations[item] = recommendations.get(item, 0) + rule[2]['support'] * item_price
+                        price_factor = normalized_prices.get(item, 0) 
+                        metric_factor = rule[2]['lift']  
+                        score = metric_factor * (1 + price_factor) 
+                        recommendations[item] = recommendations.get(item, 0) + score
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
 
-
-prices = {'item1': 10, 'item2': 20, 'item3': 5}
-database = [['item1', 'item2'], ['item1', 'item3']]
-recommender = Recommender()
-recommender.train(prices, database)
-cart = {'item1'}
-recommendations = recommender.get_recommendations(cart, 3)
-print(recommendations)
 
