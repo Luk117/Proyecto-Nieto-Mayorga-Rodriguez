@@ -41,6 +41,16 @@ class Recommender:
                     if antecedent_support > 0:
                         conf = support / antecedent_support
                         if conf >= minconf:
+                            metrics = {
+                                'sup': support / len(self.frequent_itemsets),
+                                'conf': conf,
+                                'lift': lift(self.frequent_itemsets, antecedent, consequent),
+                                'leverage': leverage(self.frequent_itemsets, antecedent, consequent),
+                                'jaccard': jaccard(self.frequent_itemsets, antecedent, consequent),
+                                'conviction': conviction(self.frequent_itemsets, antecedent, consequent),
+                                'oddsratio': oddsRatio(self.frequent_itemsets, antecedent, consequent),
+                                'imp': imp(self.frequent_itemsets, antecedent, consequent)
+                            }
                             B.append((antecedent, consequent, support, conf))
         return B
 
@@ -56,7 +66,7 @@ class Recommender:
             if rule[0].issubset(cart):
                 for item in rule[1]:
                     if item not in cart:
-                        recommendations[item] = recommendations.get(item, 0) + rule[2]
+                        recommendations[item] = recommendations.get(item, 0) + rule[2]['sup']
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
 
