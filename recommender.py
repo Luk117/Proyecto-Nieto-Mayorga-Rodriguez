@@ -1,6 +1,5 @@
 import numpy as np
-from collections import defaultdict, Counter
-import itertools
+from collections import defaultdict
 
 class Recommender:
     def __init__(self):
@@ -33,6 +32,32 @@ class Recommender:
         self.frequent_itemsets = frequent_itemsets
         return frequent_itemsets
 
+    def calculate_supports(self, D, X, Y=None):
+        count_X = 0
+        count_XY = 0
+        count_Y = 0 if Y else None
+
+        for transaction in D:
+            if set(X).issubset(transaction):
+                count_X += 1
+                if Y and set(Y).issubset(transaction):
+                    count_XY += 1
+            if Y and set(Y).issubset(transaction):
+                count_Y += 1
+
+        sup_X = count_X / len(D)
+        sup_XY = count_XY / len(D)
+        sup_Y = count_Y / len(D) if count_Y is not None else None
+
+        return sup_X, sup_XY, sup_Y
+
+    def train(self, prices, database):
+        self.database = database
+        minsup_count = int(0.03 * len(database)) 
+        self.eclat(database, minsup_count)
+        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.5, transactions=self.database)
+        return self
+    
     def createAssociationRules(self, F, minconf, transactions):
         B = []
         itemset_support = {frozenset(itemset): support for itemset, support in F}
@@ -52,19 +77,6 @@ class Recommender:
                             B.append((antecedent, consequent, support, conf, lift_value, leverage_value, jaccard_value))
                             print(f"Rule created: {antecedent} -> {consequent} | conf: {conf}, lift: {lift_value}, leverage: {leverage_value}, jaccard: {jaccard_value}")
         return B
-
-    def sup(self, X, Y=None):
-        if Y is None:
-            return sum(1 for transaction in self.database if X.issubset(transaction)) / len(self.database)
-        else:
-            return sum(1 for transaction in self.database if X.issubset(transaction) and Y.issubset(transaction)) / len(self.database)
-
-    def train(self, prices, database) -> None:
-        self.database = database
-        minsup_count = int(0.05 * len(database)) 
-        self.eclat(database, minsup_count)
-        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.7)
-        return self
 
     def get_recommendations(self, cart, max_recommendations=5):
         recommendations = {}
