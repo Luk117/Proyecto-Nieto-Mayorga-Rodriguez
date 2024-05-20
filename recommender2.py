@@ -117,3 +117,5 @@ class Recommender:
         print("Recommendations:", sorted_recommendations)
         
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
+
+
