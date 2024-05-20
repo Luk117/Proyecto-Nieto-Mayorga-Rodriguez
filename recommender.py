@@ -6,7 +6,7 @@ class Recommender:
         self.RULES = []
         self.frequent_itemsets = None
         self.database = []
-        self.prices = {}
+        self.prices = []
 
     def eclat(self, transactions, minsup_count):
         item_tidsets = defaultdict(set)
@@ -47,7 +47,7 @@ class Recommender:
         sup_XY = count_XY / len(D)
         sup_Y = count_Y / len(D) if Y is not None else None
         return sup_X, sup_XY, sup_Y
-
+    
     def createAssociationRules(self, F, minconf, transactions):
         B = []
         itemset_support = {frozenset(itemset): support for itemset, support in F}
@@ -73,30 +73,35 @@ class Recommender:
 
     def normalize_prices(self):
         if not self.prices:
-            return {}
-        max_price = max(self.prices.values())
-        min_price = min(self.prices.values())
-        range_price = max_price - min_price or 1 
-        return {item: (price - min_price) / range_price for item, price in self.prices.items()}
+            return []
+        max_price = max(self.prices)
+        min_price = min(self.prices)
+        range_price = max_price - min_price or 1  
+
+        normalized_prices = [(price - min_price) / range_price for price in self.prices]
+        return normalized_prices
+        
 
     def train(self, prices, database):
         self.database = database
         self.prices = prices
-        minsup_count = int(0.005 * len(database))
+        minsup_count = 0.01
         self.eclat(database, minsup_count)
-        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.02, transactions=self.database)
+        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.1, transactions=self.database)
     
     def get_recommendations(self, cart, max_recommendations=5):
-        normalized_prices = self.normalize_prices
+        normalized_prices = self.normalize_prices()
+
         recommendations = {}
         for rule in self.RULES:
-            if rule[0].issubset(cart):
-                for item in rule[1]:
-                    if item not in cart:
-                        price_factor = normalized_prices.get(item, 0)
-                        metric_factor = rule[2]['conf']
-                        score = metric_factor * (1 + price_factor)
-                        recommendations[item] = recommendations.get(item, 0) + score
+            if rule[0].issubset(cart):  
+                for item in rule[1]: 
+                    if item not in cart: 
+                        price_factor = normalized_prices[item] if item < len(normalized_prices) else 0
+                        metric_factor = rule[2]['confidence']  
+                        score = metric_factor * (1 + price_factor)  
+                        recommendations[item] = recommendations.get(item, 0) + score  
+
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
 
