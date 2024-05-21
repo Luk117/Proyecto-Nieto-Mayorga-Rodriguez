@@ -60,13 +60,13 @@ class Recommender:
                     if antecedent_support > 0:
                         conf = support / antecedent_support
                         if conf >= minconf:
-                            sup_X, sup_XY, sup_Y = self.calculate_supports(transactions, list(antecedent), list(consequent))
+                            #sup_X, sup_XY, sup_Y = self.calculate_supports(transactions, list(antecedent), list(consequent))
                             metrics = {
-                                'support': support,
+                                #'support': support,
                                 'confidence': conf,
-                                'lift': sup_XY / (sup_X * sup_Y) if sup_X * sup_Y != 0 else 0,
-                                'leverage': sup_XY - (sup_X * sup_Y),
-                                'jaccard': sup_XY / (sup_X + sup_Y - sup_XY) if sup_X + sup_Y - sup_XY != 0 else 0
+                                #'lift': sup_XY / (sup_X * sup_Y) if sup_X * sup_Y != 0 else 0,
+                                #'leverage': sup_XY - (sup_X * sup_Y),
+                                #'jaccard': sup_XY / (sup_X + sup_Y - sup_XY) if sup_X + sup_Y - sup_XY != 0 else 0
                             }
                             B.append((antecedent, consequent, metrics))
         return B
