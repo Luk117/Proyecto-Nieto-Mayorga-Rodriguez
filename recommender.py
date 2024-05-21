@@ -60,13 +60,8 @@ class Recommender:
                     if antecedent_support > 0:
                         conf = support / antecedent_support
                         if conf >= minconf:
-                            #sup_X, sup_XY, sup_Y = self.calculate_supports(transactions, list(antecedent), list(consequent))
                             metrics = {
-                                #'support': support,
-                                'confidence': conf,
-                                #'lift': sup_XY / (sup_X * sup_Y) if sup_X * sup_Y != 0 else 0,
-                                #'leverage': sup_XY - (sup_X * sup_Y),
-                                #'jaccard': sup_XY / (sup_X + sup_Y - sup_XY) if sup_X + sup_Y - sup_XY != 0 else 0
+                                'confidence': conf  
                             }
                             B.append((antecedent, consequent, metrics))
         return B
@@ -95,13 +90,12 @@ class Recommender:
         recommendations = {}
         for rule in self.RULES:
             if rule[0].issubset(cart):  
-                for item in rule[1]: 
-                    if item not in cart: 
+                for item in rule[1]:  
+                    if item not in cart:  
                         price_factor = normalized_prices[item] if item < len(normalized_prices) else 0
                         metric_factor = rule[2]['confidence']  
                         score = metric_factor * (1 + price_factor)  
                         recommendations[item] = recommendations.get(item, 0) + score  
-
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
 
