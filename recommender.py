@@ -9,6 +9,7 @@ class Recommender:
         self.prices = []
 
     def eclat(self, transactions, minsup_count):
+        print("eclat")
         item_tidsets = defaultdict(set)
         for tid, transaction in enumerate(transactions):
             for item in transaction:
@@ -33,6 +34,7 @@ class Recommender:
         self.frequent_itemsets = frequent_itemsets
 
     def calculate_supports(self, D, X, Y=None):
+        print("calculate_sup")
         count_X, count_XY, count_Y = 0, 0, 0 if Y else None
         for transaction in D:
             has_X = set(X).issubset(transaction)
@@ -49,6 +51,7 @@ class Recommender:
         return sup_X, sup_XY, sup_Y
     
     def createAssociationRules(self, F, minconf, transactions):
+        print("CreateASSO")
         B = []
         itemset_support = {frozenset(itemset): support for itemset, support in F}
         for itemset, support in F:
@@ -67,6 +70,7 @@ class Recommender:
         return B
 
     def normalize_prices(self):
+        print("normalized")
         if not self.prices:
             return []
         max_price = max(self.prices)
@@ -78,6 +82,7 @@ class Recommender:
         
 
     def train(self, prices, database):
+        print("training")
         self.database = database
         self.prices = prices
         minsup_count = 0.01
@@ -85,6 +90,8 @@ class Recommender:
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.1, transactions=self.database)
     
     def get_recommendations(self, cart, max_recommendations=5):
+        print("recommendations")
+        print(cart)
         normalized_prices = self.normalize_prices()
 
         recommendations = {}
@@ -98,6 +105,5 @@ class Recommender:
                         recommendations[item] = recommendations.get(item, 0) + score  
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
-
-
+    
 
