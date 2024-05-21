@@ -69,7 +69,7 @@ class Recommender:
                             B.append((antecedent, consequent, metrics))
         return B
 
-    def normalize_prices(self):
+    """def normalize_prices(self):
         print("normalized")
         if not self.prices:
             return []
@@ -78,7 +78,7 @@ class Recommender:
         range_price = max_price - min_price or 1  
 
         normalized_prices = [(price - min_price) / range_price for price in self.prices]
-        return normalized_prices
+        return normalized_prices"""
         
 
     def train(self, prices, database):
@@ -92,7 +92,8 @@ class Recommender:
     def get_recommendations(self, cart, max_recommendations=5):
         print("recommendations")
         print(cart)
-        normalized_prices = self.normalize_prices()
+        #normalized_prices = self.normalize_prices()
+        normalized_prices=self.prices
 
         recommendations = {}
         for rule in self.RULES:
