@@ -1,3 +1,4 @@
+from itertools import combinations
 import numpy as np
 from collections import defaultdict
 
@@ -55,29 +56,25 @@ class Recommender:
 
         return sup_X, sup_XY, sup_Y
 
-    def createAssociationRules(self, F, minconf, transactions):
-        B = []
-        itemset_support = {frozenset(itemset): support for itemset, support in F}
-        for itemset, support in F:
+    def createAssociationRules(self, frequent_itemsets, minconf, database):
+        rules = []
+        for itemset, support in frequent_itemsets:
             if len(itemset) > 1:
-                for i in range(len(itemset)):
-                    antecedent = frozenset([itemset[i]])
-                    consequent = frozenset(itemset[:i] + itemset[i+1:])
-                    antecedent_support = itemset_support.get(antecedent, 0)
-                    if antecedent_support > 0:
-                        conf = support / antecedent_support
-                        if conf >= minconf:
-                            sup_X, sup_XY, sup_Y = self.calculate_supports(transactions, list(antecedent), list(consequent))
-                            lift_value = sup_XY / (sup_X * sup_Y) if (sup_X * sup_Y) != 0 else 0
-                            leverage_value = sup_XY - (sup_X * sup_Y)
-                            jaccard_value = sup_XY / (sup_X + sup_Y - sup_XY) if (sup_X + sup_Y - sup_XY) != 0 else 0
-                            B.append((antecedent, consequent, support, conf, lift_value, leverage_value, jaccard_value))
-                            print(f"Rule created: {antecedent} -> {consequent} | conf: {conf}, lift: {lift_value}, leverage: {leverage_value}, jaccard: {jaccard_value}")
-        return B
+                for antecedent_size in range(1, len(itemset)):
+                    for antecedent in combinations(itemset, antecedent_size):
+                        consequent = tuple(set(itemset) - set(antecedent))
+                        sup_antecedent, sup_itemset, sup_consequent = self.calculate_supports(database, antecedent, consequent)
+                        confidence = sup_itemset / sup_antecedent
+                        if confidence >= minconf:
+                            lift = confidence / sup_consequent
+                            leverage = sup_itemset - (sup_antecedent * sup_consequent)
+                            jaccard = sup_itemset / (sup_antecedent + sup_consequent - sup_itemset)
+                            rules.append((set(antecedent), set(consequent), confidence, lift, leverage, jaccard))
+        return rules
 
-    def train(self, prices, database) -> None:
+    def train(self, prices: list, database: list):
         """
-        Allows the recommender to learn which items exist, which prices they have, and which items have been purchased together in the past
+        This method trains the Recommender system
         :param prices: a list of prices in USD for the items (the item ids are from 0 to the length of this list - 1)
         :param database: a list of lists of item ids that have been purchased together. Every entry corresponds to one transaction
         :return: the object should return itself here (this is actually important!)
@@ -117,5 +114,3 @@ class Recommender:
         print("Recommendations:", sorted_recommendations)
         
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
-
-
