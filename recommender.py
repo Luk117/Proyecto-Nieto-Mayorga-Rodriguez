@@ -9,7 +9,6 @@ class Recommender:
         self.prices = []
 
     def eclat(self, transactions, minsup_count):
-        print("eclat")
         item_tidsets = defaultdict(set)
         for tid, transaction in enumerate(transactions):
             for item in transaction:
@@ -34,7 +33,6 @@ class Recommender:
         self.frequent_itemsets = frequent_itemsets
 
     def calculate_supports(self, D, X, Y=None):
-        print("calculate_sup")
         count_X, count_XY, count_Y = 0, 0, 0 if Y else None
         for transaction in D:
             has_X = set(X).issubset(transaction)
@@ -51,7 +49,6 @@ class Recommender:
         return sup_X, sup_XY, sup_Y
     
     def createAssociationRules(self, F, minconf, transactions):
-        print("CreateASSO")
         B = []
         itemset_support = {frozenset(itemset): support for itemset, support in F}
         for itemset, support in F:
@@ -63,49 +60,46 @@ class Recommender:
                     if antecedent_support > 0:
                         conf = support / antecedent_support
                         if conf >= minconf:
+                            sup_X, sup_XY, sup_Y = self.calculate_supports(transactions, antecedent, consequent)
+                            lift = conf / sup_Y
+                            leverage = sup_XY - (sup_X * sup_Y)
+                            jaccard = sup_XY / (sup_X + sup_Y - sup_XY)
                             metrics = {
-                                'confidence': conf  
+                                'confidence': conf,
+                                'lift': lift,
+                                'leverage': leverage,
+                                'jaccard': jaccard
                             }
                             B.append((antecedent, consequent, metrics))
         return B
 
-    """def normalize_prices(self):
-        print("normalized")
+    def normalize_prices(self):
         if not self.prices:
             return []
         max_price = max(self.prices)
         min_price = min(self.prices)
         range_price = max_price - min_price or 1  
-
         normalized_prices = [(price - min_price) / range_price for price in self.prices]
-        return normalized_prices"""
+        return normalized_prices
         
-
     def train(self, prices, database):
-        print("training")
         self.database = database
         self.prices = prices
         minsup_count = 10
         self.eclat(database, minsup_count)
-        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.1, transactions=self.database)
+        self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.05, transactions=self.database)
         return self
     
     def get_recommendations(self, cart, max_recommendations=5):
-        print("recommendations")
-        print(cart)
-        #normalized_prices = self.normalize_prices()
-        normalized_prices=self.prices
-
+        normalized_prices = self.normalize_prices()
         recommendations = {}
         for rule in self.RULES:
             if rule[0].issubset(cart):  
                 for item in rule[1]:  
                     if item not in cart:  
                         price_factor = normalized_prices[item] if item < len(normalized_prices) else 0
-                        metric_factor = rule[2]['confidence']  
+                        metric_factor = (rule[2]['confidence'] + rule[2]['lift'] + rule[2]['leverage'] + rule[2]['jaccard']) / 4
                         score = metric_factor * (1 + price_factor)  
                         recommendations[item] = recommendations.get(item, 0) + score  
         sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
         return [item for item, _ in sorted_recommendations[:max_recommendations]]
-    
-
