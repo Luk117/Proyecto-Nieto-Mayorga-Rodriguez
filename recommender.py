@@ -80,7 +80,7 @@ class Recommender:
     def train(self, prices, database):
         self.database = database
         self.prices = prices
-        minsup_count = 0.01
+        minsup_count = int(0.01 * len(database))
         self.eclat(database, minsup_count)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.1, transactions=self.database)
     
