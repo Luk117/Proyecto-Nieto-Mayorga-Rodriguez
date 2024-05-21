@@ -88,6 +88,7 @@ class Recommender:
         minsup_count = 10
         self.eclat(database, minsup_count)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.1, transactions=self.database)
+        return self
     
     def get_recommendations(self, cart, max_recommendations=5):
         print("recommendations")
