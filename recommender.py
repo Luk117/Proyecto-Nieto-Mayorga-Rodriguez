@@ -85,7 +85,7 @@ class Recommender:
         print("training")
         self.database = database
         self.prices = prices
-        minsup_count = 10
+        minsup_count = 5
         self.eclat(database, minsup_count)
         self.RULES = self.createAssociationRules(self.frequent_itemsets, minconf=0.3, transactions=self.database)
         return self
